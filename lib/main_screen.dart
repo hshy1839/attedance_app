@@ -30,7 +30,7 @@ class _MainScreenState extends State<MainScreen> {
         print('로컬 IP: $localIp, 대상 IP: $targetIp');
         if (localIp == targetIp) {
 
-          _showAlert(context, "출tlr 완료", "정상적으로 출석되었습니다!");
+          _showAlert(context, "출석 완료", "정상적으로 출석되었습니다!");
         } else {
           _showAlert(context, "출석 실패", "올바른 네트워크에 연결되어 있지 않습니다.");
         }
