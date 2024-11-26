@@ -1,5 +1,7 @@
+import 'package:attedance_app/login_activity/signup.dart';
 import 'package:flutter/material.dart';
 import 'login_activity/login.dart';
+import 'login_activity/signup.dart';
 import 'main_screen.dart';
 
 void main() {
@@ -21,7 +23,8 @@ class MyApp extends StatelessWidget {
       initialRoute: '/login', // 초기 화면 설정
       routes: {
         '/login': (context) => LoginScreen(), // 로그인 페이지
-        '/main': (context) => MainScreen(),   // 메인 페이지
+        '/main': (context) => MainScreen(),
+        '/signup': (context) => SignupScreen(),
       },
     );
   }

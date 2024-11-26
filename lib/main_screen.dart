@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:io';
-
-import 'header.dart'; // Header 위젯을 import 합니다.
-import 'footer.dart'; // Footer 위젯을 import 합니다.
+import 'header.dart';
+import 'footer.dart';
 
 class MainScreen extends StatefulWidget {
   @override
@@ -12,7 +10,11 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int selectedIndex = 0; // 현재 선택된 탭의 인덱스를 초기화합니다.
-  final String targetIp = "192.168.25.26"; // 비교할 대상 IP
+  final String targetIp = "192.168.25.56"; // 비교할 대상 IP
+
+  // 출근 상태와 출근 시간을 저장하는 변수 추가
+  String attendanceStatus = '출근 전';
+  String attendanceTime = '';
 
   void _onTabTapped(int index) {
     setState(() {
@@ -22,42 +24,42 @@ class _MainScreenState extends State<MainScreen> {
 
   Future<void> _checkAttendance() async {
     try {
-      var connectivityResult = await Connectivity().checkConnectivity();
-      print('현재 네트워크 상태: $connectivityResult'); // 추가된 로그
+      // 네트워크 연결 상태는 체크하지 않고 로컬 IP만 확인
+      String? localIp = await _getLocalIpAddress();
+      print("로컬 IP: ${localIp?.trim()}, 대상 IP: ${targetIp.trim()}"); // 로컬 IP 주소 출력
 
-      if (connectivityResult == ConnectivityResult.wifi) {
-        String? localIp = await _getLocalIpAddress();
-        print('로컬 IP: $localIp, 대상 IP: $targetIp');
-        if (localIp == targetIp) {
-
-          _showAlert(context, "출석 완료", "정상적으로 출석되었습니다!");
-        } else {
-          _showAlert(context, "출석 실패", "올바른 네트워크에 연결되어 있지 않습니다.");
-        }
+      // 로컬 IP와 대상 IP가 일치하는지 확인
+      if (localIp?.trim() == targetIp.trim()) {
+        // 출석 완료 로직
+        setState(() {
+          attendanceStatus = '출근 중';
+          attendanceTime = TimeOfDay.now().format(context); // 현재 시간으로 출근 시간 업데이트
+        });
+        _showAlert(context, "출석 완료", "정상적으로 출석되었습니다!");
       } else {
-        _showAlert(context, "출석 실패", "Wi-Fi에 연결되어 있지 않습니다.");
+        _showAlert(context, "출석 실패", "올바른 네트워크에 연결되어 있지 않습니다.");
       }
     } catch (e) {
-      print('네트워크 오류: $e'); // 오류 디버깅 로그
+      print('네트워크 오류: $e'); // 네트워크 오류 시 로그 출력
       _showAlert(context, "오류 발생", "네트워크 확인 중 오류가 발생했습니다.");
     }
   }
 
-
   Future<String?> _getLocalIpAddress() async {
     try {
       for (var interface in await NetworkInterface.list()) {
-        for (var addr in interface.addresses) {
-          if (addr.type == InternetAddressType.IPv4) {
-            return addr.address; // IPv4 주소 반환
-
+        if (interface.name.contains('wlan')) { // Wi-Fi 인터페이스만 선택
+          for (var addr in interface.addresses) {
+            if (addr.type == InternetAddressType.IPv4) {
+              return addr.address;
+            }
           }
         }
       }
     } catch (e) {
       print("IP 주소를 가져오는 중 오류 발생: $e");
     }
-    return null; // IP 주소를 가져오지 못한 경우 null 반환
+    return null;
   }
 
   void _showAlert(BuildContext context, String title, String message) {
@@ -129,14 +131,14 @@ class _MainScreenState extends State<MainScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '출근 상태: 출근 중',
+                        '출근 상태: $attendanceStatus',
                         style: TextStyle(
                             fontSize: 16,
-                            color: Colors.green,
+                            color: attendanceStatus == '출근 중' ? Colors.green : Colors.black,
                             fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        '출근 시간: 09:00',
+                        '출근 시간: $attendanceTime',
                         style: TextStyle(fontSize: 16),
                       ),
                     ],
@@ -230,3 +232,4 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 }
+
