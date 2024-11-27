@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
 import 'header.dart';
 import 'footer.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../controllers/status_controller.dart'; // status_controller.dart 파일을 import 합니다.
 
 class MainScreen extends StatefulWidget {
   @override
@@ -10,7 +11,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int selectedIndex = 0; // 현재 선택된 탭의 인덱스를 초기화합니다.
-  final String targetIp = "192.168.25.56"; // 비교할 대상 IP
+  final StatusController statusController = StatusController(); // StatusController 인스턴스 생성
 
   // 출근 상태와 출근 시간을 저장하는 변수 추가
   String attendanceStatus = '출근 전';
@@ -20,66 +21,6 @@ class _MainScreenState extends State<MainScreen> {
     setState(() {
       selectedIndex = index; // 탭이 클릭될 때 선택된 인덱스를 업데이트합니다.
     });
-  }
-
-  Future<void> _checkAttendance() async {
-    try {
-      // 네트워크 연결 상태는 체크하지 않고 로컬 IP만 확인
-      String? localIp = await _getLocalIpAddress();
-      print("로컬 IP: ${localIp?.trim()}, 대상 IP: ${targetIp.trim()}"); // 로컬 IP 주소 출력
-
-      // 로컬 IP와 대상 IP가 일치하는지 확인
-      if (localIp?.trim() == targetIp.trim()) {
-        // 출석 완료 로직
-        setState(() {
-          attendanceStatus = '출근 중';
-          attendanceTime = TimeOfDay.now().format(context); // 현재 시간으로 출근 시간 업데이트
-        });
-        _showAlert(context, "출석 완료", "정상적으로 출석되었습니다!");
-      } else {
-        _showAlert(context, "출석 실패", "올바른 네트워크에 연결되어 있지 않습니다.");
-      }
-    } catch (e) {
-      print('네트워크 오류: $e'); // 네트워크 오류 시 로그 출력
-      _showAlert(context, "오류 발생", "네트워크 확인 중 오류가 발생했습니다.");
-    }
-  }
-
-  Future<String?> _getLocalIpAddress() async {
-    try {
-      for (var interface in await NetworkInterface.list()) {
-        if (interface.name.contains('wlan')) { // Wi-Fi 인터페이스만 선택
-          for (var addr in interface.addresses) {
-            if (addr.type == InternetAddressType.IPv4) {
-              return addr.address;
-            }
-          }
-        }
-      }
-    } catch (e) {
-      print("IP 주소를 가져오는 중 오류 발생: $e");
-    }
-    return null;
-  }
-
-  void _showAlert(BuildContext context, String title, String message) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(title),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // 알림 창 닫기
-              },
-              child: Text("확인"),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override
@@ -109,7 +50,7 @@ class _MainScreenState extends State<MainScreen> {
                   // 중앙: 출근 버튼
                   Center(
                     child: ElevatedButton(
-                      onPressed: _checkAttendance, // 출석 버튼 클릭 시 동작
+                      onPressed: () => statusController.checkAttendance(context), // 출석 버튼 클릭 시 출석 체크
                       style: ElevatedButton.styleFrom(
                         shape: CircleBorder(
                           side: BorderSide(color: Colors.blue, width: 3),
@@ -207,13 +148,11 @@ class _MainScreenState extends State<MainScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('- 팀 회의 공지: 2024년 11월 27일 10:00'),
+                            Text('팀 회의 공지: 2024년 11월 27일 10:00'),
                             SizedBox(height: 8),
-                            Text('- 연말 정산 관련 안내: 2024년 12월 5일'),
+                            Text('연말 정산 관련 안내: 2024년 12월 5일'),
                             SizedBox(height: 8),
-                            Text('- 워크샵 일정 안내: 2024년 12월 10일'),
-                            SizedBox(height: 8),
-                            Text('- 신입 직원 환영회: 2024년 12월 15일'),
+                            Text('워크샵 일정 안내: 2024년 12월 10일'),
                           ],
                         ),
                       ),
@@ -222,7 +161,7 @@ class _MainScreenState extends State<MainScreen> {
                 ],
               ),
             ),
-          ),
+          ), // Footer 위젯을 추가
         ],
       ),
       bottomNavigationBar: Footer(

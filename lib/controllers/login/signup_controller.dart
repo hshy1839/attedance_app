@@ -2,69 +2,79 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-class SignupController {
-  final formKey = GlobalKey<FormState>();
+import '../../login_activity/login.dart';
+
+class SignupController extends ChangeNotifier {
   final nameController = TextEditingController();
   final usernameController = TextEditingController();
-  final phoneNumberController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
+  final phoneNumberController = TextEditingController();
   final companyController = TextEditingController();
   final positionController = TextEditingController();
   final teamController = TextEditingController();
 
   String? errorMessage;
 
+  Future<void> submitData(BuildContext context) async {
+    // 비밀번호와 비밀번호 확인 비교
+    if (passwordController.text != confirmPasswordController.text) {
+      errorMessage = '비밀번호와 비밀번호 확인이 일치하지 않습니다.';
+      notifyListeners();
+      return;
+    }
+
+    // 필수 입력 필드 체크
+    if (companyController.text.isEmpty || positionController.text.isEmpty || teamController.text.isEmpty) {
+      errorMessage = '회사명, 직급, 팀명은 필수 입력 사항입니다.';
+      notifyListeners();
+      return;
+    }
+
+    final response = await http.post(
+      Uri.parse('http://192.168.25.26:8864/api/users/signup'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, Object>{
+        'name': nameController.text,
+        'username': usernameController.text,
+        'password': passwordController.text,
+        'phoneNumber': phoneNumberController.text,
+        'is_active': true,
+        'company': companyController.text,
+        'position': positionController.text,
+        'team': teamController.text,
+      }),
+    );
+
+    // 서버 응답 처리
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('회원가입 성공')),
+      );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+      );
+    } else {
+      final responseData = jsonDecode(response.body);
+      errorMessage = responseData['message'] ?? '회원가입 실패';
+      notifyListeners();
+    }
+  }
+
+
+  @override
   void dispose() {
     nameController.dispose();
     usernameController.dispose();
-    phoneNumberController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
+    phoneNumberController.dispose();
     companyController.dispose();
     positionController.dispose();
     teamController.dispose();
-  }
-
-  Future<String?> submitData(BuildContext context) async {
-    if (formKey.currentState?.validate() ?? false) {
-      if (passwordController.text != confirmPasswordController.text) {
-        errorMessage = '비밀번호와 비밀번호 확인이 일치하지 않습니다.';
-        return errorMessage;
-      }
-
-      final requestBody = {
-        "name": nameController.text,
-        "username": usernameController.text,
-        "phoneNumber": phoneNumberController.text,
-        "password": passwordController.text,
-        "is_active": "true",
-        "role": "user",
-        "company": companyController.text,
-        "position": positionController.text,
-        "team": teamController.text,
-        "created_at": DateTime.now().toIso8601String(),
-      };
-
-      try {
-        final response = await http.post(
-          Uri.parse('http://192.168.25.26:8864/api/user/signup'),
-          headers: {"Content-Type": "application/json"},
-          body: jsonEncode(requestBody),
-        );
-
-        if (response.statusCode == 200) {
-          return null; // 성공적으로 완료
-        } else {
-          final responseData = jsonDecode(response.body);
-          errorMessage = responseData['message'] ?? '회원가입 실패';
-          return errorMessage;
-        }
-      } catch (error) {
-        errorMessage = '서버 요청 실패: $error';
-        return errorMessage;
-      }
-    }
-    return '유효성 검사를 통과하지 못했습니다.';
+    super.dispose();
   }
 }

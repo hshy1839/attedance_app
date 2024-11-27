@@ -1,15 +1,15 @@
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/material.dart';
 
 class LoginController {
-  final String baseUrl;
+  final BuildContext context;
 
-  LoginController({required this.baseUrl});
+  LoginController(this.context);
 
-  Future<Map<String, dynamic>> login(String username, String password) async {
-    final url = Uri.parse('$baseUrl/api/user/login');
+  Future<void> login(String username, String password) async {
+    final url = Uri.parse('http://192.168.25.26:8864/api/users/login');
 
     final response = await http.post(
       url,
@@ -18,15 +18,66 @@ class LoginController {
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      final responseData = jsonDecode(response.body);
+
+      final loginSuccess = responseData['loginSuccess'] ?? false;
+      final token = responseData['token'] ?? '';
+
+      if (loginSuccess) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', token);
+        await prefs.setBool('isLoggedIn', true);
+
+        _showSuccessDialog();
+      } else {
+        _showErrorDialog(responseData['message'] ?? 'Error: 500');
+      }
     } else {
-      throw Exception('Failed to login');
+      _showErrorDialog('로그인 실패. 아이디와 비밀번호를 확인해 주세요.');
     }
   }
 
-  Future<void> saveLoginData(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('token', token);
-    await prefs.setBool('isLoggedIn', true);
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          '로그인',
+          style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        content: Text('환영합니다'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        actions: [
+          TextButton(
+            child: Text('확인', style: TextStyle(color: Colors.blueAccent)),
+            onPressed: () {
+              Navigator.pushNamedAndRemoveUntil(context, '/main', (route) => false);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          '로그인 실패',
+          style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        content: Text(message),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        actions: [
+          TextButton(
+            child: Text('확인', style: TextStyle(color: Colors.blueAccent)),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+      ),
+    );
   }
 }
