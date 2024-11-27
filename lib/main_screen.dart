@@ -14,7 +14,7 @@ class _MainScreenState extends State<MainScreen> {
   final StatusController statusController = StatusController(); // StatusController 인스턴스 생성
 
   // 출근 상태와 출근 시간을 저장하는 변수 추가
-  String attendanceStatus = '출근 전';
+  String attendanceStatus = '';
   String attendanceTime = '';
 
   void _onTabTapped(int index) {
@@ -49,41 +49,65 @@ class _MainScreenState extends State<MainScreen> {
 
                   // 중앙: 출근 버튼
                   Center(
-                    child: ElevatedButton(
-                      onPressed: () => statusController.checkAttendance(context), // 출석 버튼 클릭 시 출석 체크
-                      style: ElevatedButton.styleFrom(
-                        shape: CircleBorder(
-                          side: BorderSide(color: Colors.blue, width: 3),
+                    child: Row(
+                      children: [
+                        // 출근 버튼
+                        ElevatedButton(
+                          onPressed: () => statusController.checkIn(context), // 출석 버튼 클릭 시 출석 체크
+                          style: ElevatedButton.styleFrom(
+                            shape: CircleBorder(
+                              side: BorderSide(color: Colors.blue, width: 3),
+                            ),
+                            padding: EdgeInsets.all(60), // 버튼 크기를 조금 더 줄임
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.blue,
+                          ),
+                          child: Text(
+                            '출근',
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                          ),
                         ),
-                        padding: EdgeInsets.all(60), // 버튼 크기를 조금 더 줄임
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.blue,
-                      ),
-                      child: Text(
-                        '출근',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
+                        SizedBox(height: 30), // 간격을 줄임
+
+                        // 퇴근 버튼
+                        ElevatedButton(
+                          onPressed: () => statusController.checkOut(context), // 퇴근 버튼 클릭 시 퇴근 체크
+                          style: ElevatedButton.styleFrom(
+                            shape: CircleBorder(
+                              side: BorderSide(color: Colors.red, width: 3), // 퇴근 버튼 색상 변경
+                            ),
+                            padding: EdgeInsets.all(60), // 버튼 크기를 조금 더 줄임
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.red, // 퇴근 버튼 텍스트 색상
+                          ),
+                          child: Text(
+                            '퇴근',
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        SizedBox(height: 30), // 간격을 줄임
+
+                        // 출근 상태 및 시간
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '출근 상태: $attendanceStatus',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  color: attendanceStatus == '출근 중' ? Colors.green : Colors.black,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              '출근 시간: $attendanceTime',
+                              style: TextStyle(fontSize: 16),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  SizedBox(height: 30), // 간격을 줄임
 
-                  // 출근 상태 및 시간
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '출근 상태: $attendanceStatus',
-                        style: TextStyle(
-                            fontSize: 16,
-                            color: attendanceStatus == '출근 중' ? Colors.green : Colors.black,
-                            fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        '출근 시간: $attendanceTime',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ],
-                  ),
                   SizedBox(height: 30), // 간격 조정
 
                   // 하단: 출결 상태 및 공지사항 카드
