@@ -47,10 +47,20 @@ class StatusController {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('출석 체크가 완료되었습니다.')),
         );
-      } else {
+      } else if(response.statusCode == 401) {
         // 서버에서 오류가 발생했을 때
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('출석 체크에 실패했습니다.')),
+          SnackBar(content: Text('인증되지 않은 사용자입니다.')),
+        );
+      } else if(response.statusCode == 400) {
+        // 서버에서 오류가 발생했을 때
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('이미 출석 하셨습니다 !')),
+        );
+      } else if(response.statusCode == 500) {
+        // 서버에서 오류가 발생했을 때
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('서버에 오류가 발생했습니다.')),
         );
       }
     } catch (e) {
@@ -102,10 +112,20 @@ class StatusController {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('퇴근 체크가 완료되었습니다.')),
         );
-      } else {
+      } else if (response.statusCode == 404){
         // 서버에서 오류가 발생했을 때
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('퇴근 체크에 실패했습니다.')),
+          SnackBar(content: Text('출근을 먼저 해주세요!')),
+        );
+      } else if (response.statusCode == 500){
+        // 서버에서 오류가 발생했을 때
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('서버에 오류가 발생했습니다.')),
+        );
+      } else if (response.statusCode == 400){
+        // 서버에서 오류가 발생했을 때
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('이미 퇴근하셨습니다 !')),
         );
       }
     } catch (e) {

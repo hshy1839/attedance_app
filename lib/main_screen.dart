@@ -23,6 +23,62 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
+  // 출근 확인 다이얼로그
+  void _showCheckInDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('출근 하시겠습니까?'),
+          content: Text('출근 버튼을 누르면 출석 체크가 완료됩니다.'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // 다이얼로그 닫기
+              },
+              child: Text('취소'),
+            ),
+            TextButton(
+              onPressed: () {
+                statusController.checkIn(context); // 출근 로직 실행
+                Navigator.of(context).pop(); // 다이얼로그 닫기
+              },
+              child: Text('확인'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // 퇴근 확인 다이얼로그
+  void _showCheckOutDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('퇴근 하시겠습니까?'),
+          content: Text('퇴근 버튼을 누르면 퇴근 체크가 완료됩니다.'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // 다이얼로그 닫기
+              },
+              child: Text('취소'),
+            ),
+            TextButton(
+              onPressed: () {
+                statusController.checkOut(context); // 퇴근 로직 실행
+                Navigator.of(context).pop(); // 다이얼로그 닫기
+              },
+              child: Text('확인'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -53,7 +109,7 @@ class _MainScreenState extends State<MainScreen> {
                       children: [
                         // 출근 버튼
                         ElevatedButton(
-                          onPressed: () => statusController.checkIn(context), // 출석 버튼 클릭 시 출석 체크
+                          onPressed: _showCheckInDialog, // 출석 버튼 클릭 시 출석 확인 다이얼로그 표시
                           style: ElevatedButton.styleFrom(
                             shape: CircleBorder(
                               side: BorderSide(color: Colors.blue, width: 3),
@@ -71,7 +127,7 @@ class _MainScreenState extends State<MainScreen> {
 
                         // 퇴근 버튼
                         ElevatedButton(
-                          onPressed: () => statusController.checkOut(context), // 퇴근 버튼 클릭 시 퇴근 체크
+                          onPressed: _showCheckOutDialog, // 퇴근 버튼 클릭 시 퇴근 확인 다이얼로그 표시
                           style: ElevatedButton.styleFrom(
                             shape: CircleBorder(
                               side: BorderSide(color: Colors.red, width: 3), // 퇴근 버튼 색상 변경
@@ -95,7 +151,7 @@ class _MainScreenState extends State<MainScreen> {
                               '출근 상태: $attendanceStatus',
                               style: TextStyle(
                                   fontSize: 16,
-                                  color: attendanceStatus == '출근 중' ? Colors.green : Colors.black,
+                                  color: attendanceStatus == '출근 완료' ? Colors.green : Colors.black,
                                   fontWeight: FontWeight.bold),
                             ),
                             Text(
