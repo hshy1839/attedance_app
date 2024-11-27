@@ -142,24 +142,36 @@ class _MainScreenState extends State<MainScreen> {
                           ),
                         ),
                         SizedBox(height: 30), // 간격을 줄임
-
                         // 출근 상태 및 시간
-                        Row(
+                        Column(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              '출근 상태: $attendanceStatus',
+                              '출근 상태: ${statusController.attendanceStatus}',
                               style: TextStyle(
-                                  fontSize: 16,
-                                  color: attendanceStatus == '출근 완료' ? Colors.green : Colors.black,
-                                  fontWeight: FontWeight.bold),
+                                fontSize: 16,
+                                color: statusController.attendanceStatus == '출근 완료'
+                                    ? Colors.green
+                                    : Colors.black,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             Text(
-                              '출근 시간: $attendanceTime',
+                              '출근 시간: ${statusController.checkInTime}',
                               style: TextStyle(fontSize: 16),
                             ),
                           ],
                         ),
+                        if (statusController.checkOutTime != null)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '퇴근 시간: ${statusController.checkOutTime}',
+                                style: TextStyle(fontSize: 16),
+                              ),
+                            ],
+                          ),
                       ],
                     ),
                   ),

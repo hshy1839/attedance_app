@@ -4,7 +4,14 @@ import 'dart:convert';
 import 'package:intl/intl.dart'; // 날짜 형식화
 import 'package:shared_preferences/shared_preferences.dart';
 
-class StatusController {
+class StatusController  with ChangeNotifier{
+
+  String? attendanceStatus;
+  String? checkInTime;
+  String? checkOutTime;
+  String? attendanceDate;
+  bool isLoading = false;  // 로딩 상태 추가
+
   // 출석 체크 함수
   Future<void> checkIn(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
@@ -55,7 +62,7 @@ class StatusController {
       } else if(response.statusCode == 400) {
         // 서버에서 오류가 발생했을 때
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('이미 출석 하셨습니다 !')),
+          SnackBar(content: Text('이미 출근 하셨습니다 !')),
         );
       } else if(response.statusCode == 500) {
         // 서버에서 오류가 발생했을 때
@@ -135,5 +142,44 @@ class StatusController {
       );
     }
   }
+  // 출결 정보 가져오기
+  Future<void> getAttendanceInfo() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
 
+    final url = 'http://192.168.25.26:8864/api/users/attendanceInfo';
+    final headers = {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+
+    try {
+      isLoading = true;  // 로딩 시작
+      notifyListeners();
+
+      final response = await http.get(Uri.parse(url), headers: headers);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        final today = DateTime.now().toIso8601String().split('T')[0]; // 오늘 날짜 (YYYY-MM-DD)
+
+        final attendance = data.firstWhere(
+              (attendance) => attendance['date'] == today,
+          orElse: () => {},
+        );
+
+        if (attendance.isNotEmpty) {
+          attendanceStatus = attendance['attendanceStatus'];
+          checkInTime = attendance['checkInTime'];
+          checkOutTime = attendance['checkOutTime'];
+          attendanceDate = attendance['date'];
+        }
+      }
+    } catch (e) {
+      print('Error: $e');
+    } finally {
+      isLoading = false;  // 로딩 종료
+      notifyListeners();
+    }
+  }
 }
