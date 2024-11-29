@@ -28,7 +28,7 @@ class MainScreenController extends ChangeNotifier {
         .now()
         .day).toIso8601String();
 
-    final url = 'http://192.168.25.26:8864/api/users/noticeList/find';
+    final url = 'http://192.168.25.24:8864/api/users/noticeList/find';
     final headers = {
       'Content-Type': 'application/json',
       if (token != null) 'Authorization': 'Bearer $token',

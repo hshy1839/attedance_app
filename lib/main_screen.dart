@@ -79,39 +79,44 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _showCheckOutDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('퇴근 하시겠습니까?'),
-          content: Text('퇴근 버튼을 누르면 퇴근 체크가 완료됩니다.'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('취소'),
-            ),
-            TextButton(
-              onPressed: () async {
-                // 퇴근 체크
-                await statusController.checkOut(context);
+    if (statusController.attendanceStatus == '출근 완료') {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('퇴근 하시겠습니까?'),
+            content: Text('퇴근 버튼을 누르면 퇴근 체크가 완료됩니다.'),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text('취소'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  // 퇴근 체크
+                  await statusController.checkOut(context);
 
-                // 출석 정보 갱신
-                await statusController.getAttendanceInfo();
+                  // 출석 정보 갱신
+                  await statusController.getAttendanceInfo();
 
-                // 상태 갱신 후 화면 갱신
-                setState(() {});
+                  // 상태 갱신 후 화면 갱신
+                  setState(() {});
 
-                // 다이얼로그 닫기
-                Navigator.of(context).pop();
-              },
-              child: Text('확인'),
-            ),
-          ],
-        );
-      },
-    );
+                  // 다이얼로그 닫기
+                  Navigator.of(context).pop();
+                },
+                child: Text('확인'),
+              ),
+            ],
+          );
+        },
+      );
+    } else {
+      // 출근 상태가 아닌 경우에는 퇴근할 수 없도록 처리
+      print('현재 퇴근할 수 없습니다.');
+    }
   }
 
 
