@@ -40,6 +40,7 @@ class StatusController  with ChangeNotifier{
       'attendanceStatus': attendanceStatus,
       'date': formattedDate,
       'checkInTime': formattedTime,
+      'checkOutTime': '출근 중',
     });
 
     try {

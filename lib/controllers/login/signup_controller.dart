@@ -41,7 +41,7 @@ class SignupController extends ChangeNotifier {
         'username': usernameController.text,
         'password': passwordController.text,
         'phoneNumber': phoneNumberController.text,
-        'is_active': true,
+        'is_active': false,
         'company': companyController.text,
         'position': positionController.text,
         'team': teamController.text,

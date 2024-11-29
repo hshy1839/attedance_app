@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'header.dart';
 import 'footer.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../controllers/status_controller.dart'; // status_controller.dart 파일을 import 합니다.
 
@@ -16,6 +19,9 @@ class _MainScreenState extends State<MainScreen> {
   // 출근 상태와 출근 시간을 저장하는 변수 추가
   String attendanceStatus = '';
   String attendanceTime = '';
+
+  // 공지사항 리스트
+  List<dynamic> notices = [];
 
   void _onTabTapped(int index) {
     setState(() {
@@ -78,6 +84,30 @@ class _MainScreenState extends State<MainScreen> {
       },
     );
   }
+
+  Future<void> fetchNotices() async {
+    final response = await http.get(Uri.parse('http://192.168.25.26:8864/api/users/noticeList'));
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      // 공지사항을 날짜 기준으로 내림차순 정렬
+      data.sort((a, b) {
+        DateTime dateA = DateTime.parse(a['created_at']); // 날짜를 DateTime 형식으로 변환
+        DateTime dateB = DateTime.parse(b['created_at']);
+        return dateB.compareTo(dateA); // 내림차순으로 정렬
+      });
+
+      // 최대 5개만 가져오기
+      setState(() {
+        notices = data.take(5).toList(); // 5개만 추출
+      });
+    } else {
+      // 오류 처리
+      throw Exception('공지사항을 가져오는데 실패했습니다.');
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -217,6 +247,7 @@ class _MainScreenState extends State<MainScreen> {
                       ),
                       SizedBox(height: 20),
                       // 공지사항 카드
+                      // 최근 공지사항
                       Text(
                         '최근 공지사항',
                         style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
@@ -225,27 +256,25 @@ class _MainScreenState extends State<MainScreen> {
                       Container(
                         width: double.infinity, // 화면 전체 너비에 맞춤
                         decoration: BoxDecoration(
-                          color: Colors.white, // 배경색 흰색
-                          borderRadius: BorderRadius.circular(12), // 모서리 둥글게
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.grey.withOpacity(0.2), // 그림자 색상 및 투명도
+                              color: Colors.grey.withOpacity(0.2),
                               spreadRadius: 2,
                               blurRadius: 5,
-                              offset: Offset(0, 3), // 그림자의 위치 조정
+                              offset: Offset(0, 3),
                             ),
                           ],
                         ),
-                        padding: EdgeInsets.all(16), // 내부 여백
+                        padding: EdgeInsets.all(16),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('팀 회의 공지: 2024년 11월 27일 10:00'),
-                            SizedBox(height: 8),
-                            Text('연말 정산 관련 안내: 2024년 12월 5일'),
-                            SizedBox(height: 8),
-                            Text('워크샵 일정 안내: 2024년 12월 10일'),
-                          ],
+                          children: notices.map((notice) {
+                            return ListTile(
+                              title: Text(notice['title']),
+                              subtitle: Text(notice['content']),
+                            );
+                          }).toList(),
                         ),
                       ),
                     ],
