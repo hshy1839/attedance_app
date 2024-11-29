@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'package:attedance_app/controllers/main_screen_controller.dart';
 import 'package:flutter/material.dart';
 import 'header.dart';
 import 'footer.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../controllers/status_controller.dart';
+import 'package:intl/intl.dart';
 
 class MainScreen extends StatefulWidget {
   @override
@@ -14,6 +16,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int selectedIndex = 0;
   final StatusController statusController = StatusController();
+  final MainScreenController mainScreenController = MainScreenController();
 
   String attendanceStatus = '출근 전';
   String checkInTime = '';
@@ -28,6 +31,9 @@ class _MainScreenState extends State<MainScreen> {
     statusController.getAttendanceInfo().then((_) {
       setState(() {});
     });
+    mainScreenController.getNotices().then((_) {
+      setState(() {});
+    });;
   }
 
   void _onTabTapped(int index) {
@@ -52,7 +58,7 @@ class _MainScreenState extends State<MainScreen> {
             ),
             TextButton(
               onPressed: () async {
-                // 퇴근 체크
+                // 출석 체크
                 await statusController.checkIn(context);
 
                 // 출석 정보 갱신
@@ -108,26 +114,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Future<void> fetchNotices() async {
-    final response = await http.get(
-        Uri.parse('http://192.168.25.26:8864/api/users/noticeList'));
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-
-      data.sort((a, b) {
-        DateTime dateA = DateTime.parse(a['created_at']);
-        DateTime dateB = DateTime.parse(b['created_at']);
-        return dateB.compareTo(dateA);
-      });
-
-      setState(() {
-        notices = data.take(5).toList();
-      });
-    } else {
-      throw Exception('공지사항을 가져오는데 실패했습니다.');
-    }
-  }
 
 
 
@@ -237,31 +224,67 @@ class _MainScreenState extends State<MainScreen> {
                       SizedBox(height: 20),
                       Text('최근 공지사항', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                       SizedBox(height: 10),
-                      Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.2),
-                              spreadRadius: 2,
-                              blurRadius: 5,
-                              offset: Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        padding: EdgeInsets.all(16),
-                        child: Column(
-                          children: notices.map((notice) {
-                            return ListTile(
-                              title: Text(notice['title']),
-                              subtitle: Text(notice['content']),
-                            );
-                          }).toList(),
-                        ),
+                      // Add a button to fetch notices
+
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.2),
+                        spreadRadius: 2,
+                        blurRadius: 5,
+                        offset: Offset(0, 3),
                       ),
                     ],
+                  ),
+                  padding: EdgeInsets.all(16),
+                  child: Column(
+                    children: List.generate(
+                      mainScreenController.titles.take(5).toList().reversed.length, // 역순으로 가져오기
+                          (index) {
+                        // 실제 인덱스를 역순으로 접근
+                        int actualIndex = mainScreenController.titles.length - 1 - index;
+
+                        // 작성일 포맷
+                        String formattedDate = DateFormat('yyyy-MM-dd').format(DateTime.parse(mainScreenController.createdAts[actualIndex]));
+
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween, // 양 끝에 배치
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  mainScreenController.titles[actualIndex],
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                  maxLines: 1, // 한 줄로 제한
+                                  overflow: TextOverflow.ellipsis, // 초과하면 '...'으로 표시
+                                ),
+                              ),
+                              SizedBox(width: 10), // 간격을 위한 SizedBox
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.end, // 오른쪽 정렬
+                                children: [
+
+                                  Text(
+                                    '${formattedDate}',
+                                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                SizedBox(height: 30),
+              ],
                   ),
                 ],
               ),

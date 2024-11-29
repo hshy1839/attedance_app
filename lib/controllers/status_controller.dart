@@ -171,7 +171,6 @@ class StatusController  extends  ChangeNotifier {
           orElse: () => {},
         );
 
-        print('Fetched status: $Status');
 
         if (Status.isNotEmpty) {
           attendanceStatus = Status['attendanceStatus'] ?? '출근 전';
@@ -181,10 +180,8 @@ class StatusController  extends  ChangeNotifier {
 
 
           notifyListeners();  // 상태 변경을 알림
-          print('출석 정보 가져옴');
         } else if (Status.isEmpty){
           print('출석 정보 가져왔는데 비어있음');
-          print('Response body: ${response.body}');
         }
       } else {
         throw Exception('출근 상태를 가져오는데 실패했습니다.');
