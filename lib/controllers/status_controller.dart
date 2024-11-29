@@ -4,13 +4,13 @@ import 'dart:convert';
 import 'package:intl/intl.dart'; // 날짜 형식화
 import 'package:shared_preferences/shared_preferences.dart';
 
-class StatusController  with ChangeNotifier{
+class StatusController  extends  ChangeNotifier {
 
   String? attendanceStatus;
   String? checkInTime;
   String? checkOutTime;
   String? attendanceDate;
-  bool isLoading = false;  // 로딩 상태 추가
+  bool isLoading = false; // 로딩 상태 추가
 
   // 출석 체크 함수
   Future<void> checkIn(BuildContext context) async {
@@ -21,7 +21,8 @@ class StatusController  with ChangeNotifier{
 
     // 한국 시간으로 변환
     final koreaTime = currentDate.add(Duration(hours: 9)); // UTC+9: 한국 시간
-    final formattedTime = DateFormat('HH:mm:ss').format(koreaTime); // 시간 포맷 (예: 14:30:00)
+    final formattedTime = DateFormat('HH:mm:ss').format(
+        koreaTime); // 시간 포맷 (예: 14:30:00)
 
     // 출석 상태를 '출근 중'으로 설정
     final attendanceStatus = '출근 완료';
@@ -54,18 +55,19 @@ class StatusController  with ChangeNotifier{
         // 출석 상태가 성공적으로 변경되었을 때
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('출석 체크가 완료되었습니다.')),
+
         );
-      } else if(response.statusCode == 401) {
+      } else if (response.statusCode == 401) {
         // 서버에서 오류가 발생했을 때
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('인증되지 않은 사용자입니다.')),
         );
-      } else if(response.statusCode == 400) {
+      } else if (response.statusCode == 400) {
         // 서버에서 오류가 발생했을 때
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('이미 출근 하셨습니다 !')),
         );
-      } else if(response.statusCode == 500) {
+      } else if (response.statusCode == 500) {
         // 서버에서 오류가 발생했을 때
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('서버에 오류가 발생했습니다.')),
@@ -87,7 +89,8 @@ class StatusController  with ChangeNotifier{
 
     // 한국 시간으로 변환
     final koreaTime = currentDate.add(Duration(hours: 9)); // UTC+9: 한국 시간
-    final formattedTime = DateFormat('HH:mm:ss').format(koreaTime); // 시간 포맷 (예: 14:30:00)
+    final formattedTime = DateFormat('HH:mm:ss').format(
+        koreaTime); // 시간 포맷 (예: 14:30:00)
 
     // 출석 상태를 '퇴근 중'으로 설정
     final attendanceStatus = '퇴근 완료';
@@ -120,17 +123,17 @@ class StatusController  with ChangeNotifier{
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('퇴근 체크가 완료되었습니다.')),
         );
-      } else if (response.statusCode == 404){
+      } else if (response.statusCode == 404) {
         // 서버에서 오류가 발생했을 때
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('출근을 먼저 해주세요!')),
         );
-      } else if (response.statusCode == 500){
+      } else if (response.statusCode == 500) {
         // 서버에서 오류가 발생했을 때
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('서버에 오류가 발생했습니다.')),
         );
-      } else if (response.statusCode == 400){
+      } else if (response.statusCode == 400) {
         // 서버에서 오류가 발생했을 때
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('이미 퇴근하셨습니다 !')),
@@ -143,6 +146,7 @@ class StatusController  with ChangeNotifier{
       );
     }
   }
+
   // 출결 정보 가져오기
   Future<void> getAttendanceInfo() async {
     final prefs = await SharedPreferences.getInstance();
@@ -155,32 +159,42 @@ class StatusController  with ChangeNotifier{
     };
 
     try {
-      isLoading = true;  // 로딩 시작
-      notifyListeners();
-
+      isLoading = true;
+      notifyListeners();  // 상태 변경을 알림
       final response = await http.get(Uri.parse(url), headers: headers);
-
+      final currentDate = DateTime.utc(DateTime.now().year, DateTime.now().month, DateTime.now().day).toIso8601String();
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        final today = DateTime.now().toIso8601String().split('T')[0]; // 오늘 날짜 (YYYY-MM-DD)
 
-        final attendance = data.firstWhere(
-              (attendance) => attendance['date'] == today,
+        final Status = data.firstWhere(
+              (status) => status['date']?.substring(0, 10) == currentDate.substring(0, 10),
           orElse: () => {},
         );
 
-        if (attendance.isNotEmpty) {
-          attendanceStatus = attendance['attendanceStatus'];
-          checkInTime = attendance['checkInTime'];
-          checkOutTime = attendance['checkOutTime'];
-          attendanceDate = attendance['date'];
+        print('Fetched status: $Status');
+
+        if (Status.isNotEmpty) {
+          attendanceStatus = Status['attendanceStatus'] ?? '출근 전';
+          checkInTime = Status['checkInTime'] ?? '';
+          checkOutTime = Status['checkOutTime'] ?? '';
+          attendanceDate = Status['date'] ?? '';
+
+
+          notifyListeners();  // 상태 변경을 알림
+          print('출석 정보 가져옴');
+        } else if (Status.isEmpty){
+          print('출석 정보 가져왔는데 비어있음');
+          print('Response body: ${response.body}');
         }
+      } else {
+        throw Exception('출근 상태를 가져오는데 실패했습니다.');
       }
     } catch (e) {
       print('Error: $e');
     } finally {
-      isLoading = false;  // 로딩 종료
-      notifyListeners();
+      isLoading = false;
+      notifyListeners();  // 상태 변경을 알림
     }
   }
 }
+

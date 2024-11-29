@@ -1,11 +1,10 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'header.dart';
 import 'footer.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../controllers/status_controller.dart'; // status_controller.dart 파일을 import 합니다.
+import '../controllers/status_controller.dart';
 
 class MainScreen extends StatefulWidget {
   @override
@@ -13,23 +12,30 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int selectedIndex = 0; // 현재 선택된 탭의 인덱스를 초기화합니다.
-  final StatusController statusController = StatusController(); // StatusController 인스턴스 생성
+  int selectedIndex = 0;
+  final StatusController statusController = StatusController();
 
-  // 출근 상태와 출근 시간을 저장하는 변수 추가
-  String attendanceStatus = '';
-  String attendanceTime = '';
+  String attendanceStatus = '출근 전';
+  String checkInTime = '';
+  String checkOutTime = '';
 
-  // 공지사항 리스트
   List<dynamic> notices = [];
 
-  void _onTabTapped(int index) {
-    setState(() {
-      selectedIndex = index; // 탭이 클릭될 때 선택된 인덱스를 업데이트합니다.
+  @override
+  void initState() {
+    super.initState();
+    // 화면 로드 시 출석 정보 자동으로 불러오기
+    statusController.getAttendanceInfo().then((_) {
+      setState(() {});
     });
   }
 
-  // 출근 확인 다이얼로그
+  void _onTabTapped(int index) {
+    setState(() {
+      selectedIndex = index;
+    });
+  }
+
   void _showCheckInDialog() {
     showDialog(
       context: context,
@@ -40,14 +46,23 @@ class _MainScreenState extends State<MainScreen> {
           actions: <Widget>[
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // 다이얼로그 닫기
+                Navigator.of(context).pop();
               },
               child: Text('취소'),
             ),
             TextButton(
-              onPressed: () {
-                statusController.checkIn(context); // 출근 로직 실행
-                Navigator.of(context).pop(); // 다이얼로그 닫기
+              onPressed: () async {
+                // 퇴근 체크
+                await statusController.checkIn(context);
+
+                // 출석 정보 갱신
+                await statusController.getAttendanceInfo();
+
+                // 상태 갱신 후 화면 갱신
+                setState(() {});
+
+                // 다이얼로그 닫기
+                Navigator.of(context).pop();
               },
               child: Text('확인'),
             ),
@@ -57,7 +72,6 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  // 퇴근 확인 다이얼로그
   void _showCheckOutDialog() {
     showDialog(
       context: context,
@@ -68,14 +82,23 @@ class _MainScreenState extends State<MainScreen> {
           actions: <Widget>[
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // 다이얼로그 닫기
+                Navigator.of(context).pop();
               },
               child: Text('취소'),
             ),
             TextButton(
-              onPressed: () {
-                statusController.checkOut(context); // 퇴근 로직 실행
-                Navigator.of(context).pop(); // 다이얼로그 닫기
+              onPressed: () async {
+                // 퇴근 체크
+                await statusController.checkOut(context);
+
+                // 출석 정보 갱신
+                await statusController.getAttendanceInfo();
+
+                // 상태 갱신 후 화면 갱신
+                setState(() {});
+
+                // 다이얼로그 닫기
+                Navigator.of(context).pop();
               },
               child: Text('확인'),
             ),
@@ -86,27 +109,26 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Future<void> fetchNotices() async {
-    final response = await http.get(Uri.parse('http://192.168.25.26:8864/api/users/noticeList'));
+    final response = await http.get(
+        Uri.parse('http://192.168.25.26:8864/api/users/noticeList'));
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
 
-      // 공지사항을 날짜 기준으로 내림차순 정렬
       data.sort((a, b) {
-        DateTime dateA = DateTime.parse(a['created_at']); // 날짜를 DateTime 형식으로 변환
+        DateTime dateA = DateTime.parse(a['created_at']);
         DateTime dateB = DateTime.parse(b['created_at']);
-        return dateB.compareTo(dateA); // 내림차순으로 정렬
+        return dateB.compareTo(dateA);
       });
 
-      // 최대 5개만 가져오기
       setState(() {
-        notices = data.take(5).toList(); // 5개만 추출
+        notices = data.take(5).toList();
       });
     } else {
-      // 오류 처리
       throw Exception('공지사항을 가져오는데 실패했습니다.');
     }
   }
+
 
 
   @override
@@ -115,14 +137,14 @@ class _MainScreenState extends State<MainScreen> {
       backgroundColor: Color(0xFFF5F5F5),
       body: Column(
         children: [
-          Header(), // Header 위젯을 추가
+          Header(),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0), // 전체적인 여백 설정
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(height: 20), // Header와 나머지 컨텐츠 간격
+                  SizedBox(height: 20),
                   Text(
                     '안녕하세요, [사용자 이름]님',
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
@@ -132,106 +154,73 @@ class _MainScreenState extends State<MainScreen> {
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 30),
-
-                  // 중앙: 출근 버튼
                   Center(
                     child: Row(
                       children: [
-                        // 출근 버튼
                         ElevatedButton(
-                          onPressed: _showCheckInDialog, // 출석 버튼 클릭 시 출석 확인 다이얼로그 표시
+                          onPressed: _showCheckInDialog,
                           style: ElevatedButton.styleFrom(
-                            shape: CircleBorder(
-                              side: BorderSide(color: Colors.blue, width: 3),
-                            ),
-                            padding: EdgeInsets.all(60), // 버튼 크기를 조금 더 줄임
+                            shape: CircleBorder(side: BorderSide(color: Colors.blue, width: 3)),
+                            padding: EdgeInsets.all(60),
                             backgroundColor: Colors.white,
                             foregroundColor: Colors.blue,
                           ),
-                          child: Text(
-                            '출근',
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                          ),
+                          child: Text('출근', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                         ),
-                        SizedBox(height: 30), // 간격을 줄임
-
-                        // 퇴근 버튼
+                        SizedBox(width: 30),
                         ElevatedButton(
-                          onPressed: _showCheckOutDialog, // 퇴근 버튼 클릭 시 퇴근 확인 다이얼로그 표시
+                          onPressed: _showCheckOutDialog,
                           style: ElevatedButton.styleFrom(
-                            shape: CircleBorder(
-                              side: BorderSide(color: Colors.red, width: 3), // 퇴근 버튼 색상 변경
-                            ),
-                            padding: EdgeInsets.all(60), // 버튼 크기를 조금 더 줄임
+                            shape: CircleBorder(side: BorderSide(color: Colors.red, width: 3)),
+                            padding: EdgeInsets.all(60),
                             backgroundColor: Colors.white,
-                            foregroundColor: Colors.red, // 퇴근 버튼 텍스트 색상
+                            foregroundColor: Colors.red,
                           ),
-                          child: Text(
-                            '퇴근',
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                          ),
+                          child: Text('퇴근', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                         ),
-                        SizedBox(height: 30), // 간격을 줄임
-                        // 출근 상태 및 시간
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '출근 상태: ${statusController.attendanceStatus}',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: statusController.attendanceStatus == '출근 완료'
-                                    ? Colors.green
-                                    : Colors.black,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              '출근 시간: ${statusController.checkInTime}',
-                              style: TextStyle(fontSize: 16),
-                            ),
-                          ],
-                        ),
-                        if (statusController.checkOutTime != null)
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                '퇴근 시간: ${statusController.checkOutTime}',
-                                style: TextStyle(fontSize: 16),
-                              ),
-                            ],
-                          ),
                       ],
                     ),
                   ),
-
-                  SizedBox(height: 30), // 간격 조정
-
-                  // 하단: 출결 상태 및 공지사항 카드
+                  SizedBox(height: 30),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '출근 상태: ${statusController.attendanceStatus}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: statusController.attendanceStatus == '퇴근 완료' ? Colors.green : statusController.attendanceStatus == '출근 중' ? Colors.orange : Colors.black,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text('출근 시간: ${statusController.checkInTime}', style: TextStyle(fontSize: 16)),
+                      if (statusController.checkOutTime != null && statusController.checkOutTime!.isNotEmpty)
+                        Text('퇴근 시간: ${statusController.checkOutTime}', style: TextStyle(fontSize: 16)),
+                    ],
+                  ),
+                  SizedBox(height: 20),
+                  // 버튼을 제거하고 출석 상태가 자동으로 업데이트되도록 함
+                  SizedBox(height: 30),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        '출결 요약',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                      ),
+                      Text('출결 요약', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                       SizedBox(height: 10),
                       Container(
-                        width: double.infinity, // 화면 전체 너비에 맞춤
+                        width: double.infinity,
                         decoration: BoxDecoration(
-                          color: Colors.white, // 배경색 흰색
-                          borderRadius: BorderRadius.circular(12), // 모서리 둥글게
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.grey.withOpacity(0.2), // 그림자 색상 및 투명도
+                              color: Colors.grey.withOpacity(0.2),
                               spreadRadius: 2,
                               blurRadius: 5,
-                              offset: Offset(0, 3), // 그림자의 위치 조정
+                              offset: Offset(0, 3),
                             ),
                           ],
                         ),
-                        padding: EdgeInsets.all(16), // 내부 여백
+                        padding: EdgeInsets.all(16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -246,15 +235,10 @@ class _MainScreenState extends State<MainScreen> {
                         ),
                       ),
                       SizedBox(height: 20),
-                      // 공지사항 카드
-                      // 최근 공지사항
-                      Text(
-                        '최근 공지사항',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                      ),
+                      Text('최근 공지사항', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                       SizedBox(height: 10),
                       Container(
-                        width: double.infinity, // 화면 전체 너비에 맞춤
+                        width: double.infinity,
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
@@ -282,14 +266,13 @@ class _MainScreenState extends State<MainScreen> {
                 ],
               ),
             ),
-          ), // Footer 위젯을 추가
+          ),
         ],
       ),
       bottomNavigationBar: Footer(
-        onTabTapped: _onTabTapped,
         selectedIndex: selectedIndex,
+        onTabTapped: _onTabTapped,
       ),
     );
   }
 }
-

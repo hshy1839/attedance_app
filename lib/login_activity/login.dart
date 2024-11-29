@@ -33,7 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Image.asset('assets/images/app_logo.png', height: 50),
+
                   SizedBox(height: 30),
                   Text(
                     '함께하는 모든 순간 ,',
